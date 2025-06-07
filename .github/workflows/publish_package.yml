@@ -26,7 +26,7 @@ jobs:
       - name: Configure Poetry
         run: |
           poetry config repositories.github https://github.com/CubeVic/configuration_loader
-          poetry config http-basic.github ${{ github.actor }} ${{ secrets.GITHUB_TOKEN }}
+          poetry config http-basic.github ${{ github.actor }} ${{ secrets.PAT_TOKEN }}
           
       - name: Build and publish
         run: |
