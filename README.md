@@ -1,5 +1,8 @@
 # ConfigLoader
 
+[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A flexible and extensible configuration loader for Python applications that supports multiple sources and formats. This package provides a simple way to load and manage configuration from various sources like files, environment variables, and CLI arguments.
 
 ## Features
@@ -165,51 +168,4 @@ database:
 ```
 
 ### JSON Configuration
-```json
-{
-  "app": {
-    "name": "myapp",
-    "version": "1.0.0",
-    "debug": true
-  },
-  "database": {
-    "host": "localhost",
-    "port": 5432
-  }
-}
 ```
-
-## Running Tests
-
-The project uses pytest and hypothesis for testing. To run the tests:
-
-```bash
-# Install development dependencies
-poetry install
-
-# Run tests
-poetry run pytest
-
-# Run tests with coverage
-poetry run pytest --cov=configloader
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **File Not Found**: If you get a `ConfigFileError`, make sure your configuration file exists and is accessible.
-
-2. **Validation Errors**: If you get a `ConfigValidationError`, check that your configuration matches the Pydantic model schema.
-
-3. **Source Errors**: If you get a `ConfigSourceError`, verify that your environment variables or CLI arguments are correctly formatted.
-
-4. **Parser Errors**: If you get a `ConfigParserError`, ensure your configuration file is in a supported format (TOML, YAML, or JSON).
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
