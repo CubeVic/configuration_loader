@@ -1,4 +1,4 @@
-name: Publish Package
+name: Publish to PyPI
 
 on:
   release:
@@ -7,9 +7,6 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     steps:
       - uses: actions/checkout@v4
       
@@ -25,10 +22,9 @@ jobs:
           
       - name: Configure Poetry
         run: |
-          poetry config repositories.github https://github.com/CubeVic/configuration_loader
-          poetry config http-basic.github ${{ github.actor }} ${{ secrets.PAT_TOKEN }}
+          poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
           
       - name: Build and publish
         run: |
           poetry build
-          poetry publish -r github
+          poetry publish --no-interaction
