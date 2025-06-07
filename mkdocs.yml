@@ -1,0 +1,71 @@
+site_name: ConfigLoader
+site_description: A flexible configuration loader for Python applications
+site_author: CubeVic
+repo_url: https://github.com/CubeVic/configuration_loader
+repo_name: CubeVic/configuration_loader
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed
+  - admonition
+  - footnotes
+  - meta
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          selection:
+            docstring_style: google
+          rendering:
+            show_source: true
+            show_root_heading: true
+  - autorefs:
+      link_titles: true
+  - literate-nav
+  - section-index
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage:
+    - Basic Usage: usage/basic.md
+    - Advanced Usage: usage/advanced.md
+    - Custom Sources: usage/custom_sources.md
+  - API Reference:
+    - ConfigLoader: api/configloader.md
+    - Sources: api/sources.md
+    - Parsers: api/parsers.md
+  - Contributing: contributing.md
+  - Changelog: changelog.md 
