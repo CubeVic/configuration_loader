@@ -1,19 +1,24 @@
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, Type, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Type
+
 from pydantic import BaseModel, ValidationError
 
+from configloader.exceptions import (
+    ConfigFileError,
+    ConfigParserError,
+    ConfigSourceError,
+    ConfigValidationError,
+)
 from configloader.parsers.json_parser import JSONParser
 from configloader.parsers.toml_parser import TOMLParser
 from configloader.parsers.yaml_parser import YAMLParser
-from configloader.sources import ConfigSource, FileConfigSource, EnvConfigSource, CLIConfigSource
-from configloader.exceptions import (
-    ConfigValidationError,
-    ConfigSourceError,
-    ConfigFileError,
-    ConfigParserError,
-    ConfigMergeError
+from configloader.sources import (
+    CLIConfigSource,
+    ConfigSource,
+    EnvConfigSource,
+    FileConfigSource,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,13 +61,11 @@ class ConfigLoader:
         Raises:
             ConfigFileError: If the configuration file cannot be found or accessed
         """
-        try:
-            self.config_file_path = self._get_file(config_file_path, config_file_name)
-            self.config_model = config_model
-            self.sources = self._get_sources(env_prefix, cli_args, custom_sources)
-            self._config = None
-        except Exception as e:
-            raise ConfigFileError(f"Failed to initialize ConfigLoader: {str(e)}") from e
+
+        self.config_file_path = self._get_file(config_file_path, config_file_name)
+        self.config_model = config_model
+        self.sources = self._get_sources(env_prefix, cli_args, custom_sources)
+        self._config = None
 
     @staticmethod
     def _get_file(config_file_path: Optional[str], config_file_name: str) -> Path:

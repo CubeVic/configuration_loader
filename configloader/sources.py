@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
-import os
-from pathlib import Path
 import logging
+import os
+from abc import ABC, abstractmethod
 from argparse import Namespace
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,9 @@
-import os
 import argparse
-from typing import Dict, Any
+import os
+from typing import Any, Dict
+
 from pydantic import BaseModel
+
 from configloader.core import ConfigLoader
 from configloader.sources import ConfigSource
 

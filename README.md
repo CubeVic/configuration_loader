@@ -29,7 +29,7 @@ poetry add configloader
 ### Simple Configuration Loading (Without Validation)
 
 ```python
-from configloader.core import ConfigLoader
+from configloader import ConfigLoader
 
 # Load from default config.toml without validation
 config_loader = ConfigLoader()
@@ -44,7 +44,7 @@ config = config_loader.load_config()  # Returns raw dictionary
 
 ```python
 import os
-from configloader.core import ConfigLoader
+from configloader import ConfigLoader
 
 # Set environment variables
 os.environ["MYAPP_DATABASE_HOST"] = "localhost"
@@ -62,7 +62,7 @@ config = config_loader.load_config()  # Returns raw dictionary
 
 ```python
 import argparse
-from configloader.core import ConfigLoader
+from configloader import ConfigLoader
 
 # Parse CLI arguments
 parser = argparse.ArgumentParser()
@@ -112,7 +112,8 @@ You can optionally use Pydantic models to validate your configuration. This is u
 
 ```python
 from pydantic import BaseModel
-from configloader.core import ConfigLoader
+from configloader import ConfigLoader
+from configloader.exceptions import ConfigValidationError
 
 # Define your configuration schema
 class AppConfig(BaseModel):
@@ -129,18 +130,17 @@ config_loader = ConfigLoader(
     config_file_name="config.yaml",
     config_model=AppConfig  # Optional: Add validation
 )
-config = config_loader.load_config()  # Will validate against AppConfig model
 
-# If validation fails, it will raise a ValidationError
+# If validation fails, it will raise a ConfigValidationError
 try:
     config = config_loader.load_config()
-except Exception as e:
+except ConfigValidationError as e:
     print(f"Configuration validation failed: {e}")
 ```
 
 ## Configuration File Examples
 
-### TOML Configuration
+### TOML Configuration (Default)
 ```toml
 [app]
 name = "myapp"
@@ -198,26 +198,13 @@ poetry run pytest --cov=configloader
 
 ### Common Issues
 
-1. **Configuration Not Found**
-   - Make sure the configuration file exists in the specified path
-   - Check if the file extension is supported (.toml, .yaml, .yml, .json)
-   - Verify file permissions
+1. **File Not Found**: If you get a `ConfigFileError`, make sure your configuration file exists and is accessible.
 
-2. **Validation Errors**
-   - If using Pydantic validation, ensure your configuration matches the model
-   - Check for required fields in your Pydantic model
-   - Verify data types match the model's expectations
-   - Remember: validation is optional - you can load without a model
+2. **Validation Errors**: If you get a `ConfigValidationError`, check that your configuration matches the Pydantic model schema.
 
-3. **Environment Variables Not Loading**
-   - Confirm the environment variables are set
-   - Check if the env_prefix matches your environment variables
-   - Verify the environment variable names follow the prefix pattern
+3. **Source Errors**: If you get a `ConfigSourceError`, verify that your environment variables or CLI arguments are correctly formatted.
 
-4. **Custom Source Issues**
-   - Ensure your custom source implements the ConfigSource interface
-   - Verify the load() method returns a dictionary
-   - Check for any exceptions in your custom source
+4. **Parser Errors**: If you get a `ConfigParserError`, ensure your configuration file is in a supported format (TOML, YAML, or JSON).
 
 ## Contributing
 

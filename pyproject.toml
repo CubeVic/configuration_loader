@@ -1,24 +1,70 @@
 [tool.poetry]
 name = "configloader"
 version = "0.1.0"
-description = "A plugin-ready, multi-format configuration loader for CLI tools and services."
-authors = ["CubeVic<victoraguirre.f@gmail.com>"]
+description = "A flexible and extensible configuration loader for Python applications with support for multiple formats and sources"
+authors = ["CubeVic <victoraguirre.f@gmail.com>"]
 readme = "README.md"
 license = "MIT"
 packages = [{ include = "configloader" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities"
+]
+keywords = ["configuration", "config", "yaml", "json", "toml", "settings", "env"]
+repository = "https://github.com/CubeVic/configuration_loader"
+documentation = "https://configloader.readthedocs.io/"
+homepage = "https://github.com/CubeVic/configuration_loader"
 
 [tool.poetry.dependencies]
 python = "^3.11"
 pydantic = "^2.11.4"
-typer = "^0.15.3"
 toml = "^0.10.2"
 pyyaml = "^6.0.2"
-
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
 hypothesis = "^6.131.15"
+pytest-cov = "^4.1.0"
+black = "^24.2.0"
+isort = "^5.13.2"
+mypy = "^1.8.0"
+ruff = "^0.2.2"
+mkdocs = "^1.5.3"
+mkdocs-material = "^9.5.3"
+mkdocstrings = {extras = ["python"], version = "^0.24.0"}
+mkdocs-gen-files = "^0.5.0"
+mkdocs-literate-nav = "^0.6.1"
+mkdocs-section-index = "^0.3.8"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+select = ["E", "F", "B", "I"]
+ignore = ["E501"]

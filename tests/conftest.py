@@ -1,5 +1,13 @@
-from hypothesis.strategies import one_of, text, integers, lists, dictionaries, recursive, booleans, sampled_from
-
+from hypothesis.strategies import (
+    booleans,
+    dictionaries,
+    integers,
+    lists,
+    one_of,
+    recursive,
+    sampled_from,
+    text,
+)
 
 basic_types = one_of(text(max_size=30), integers(), lists(elements=text(max_size=30)))
 key_characteristics_toml = text(min_size=1, alphabet="abcdefghijklmnopqrstuvwxyz0123456789_", max_size=20)

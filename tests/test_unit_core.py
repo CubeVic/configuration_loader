@@ -1,20 +1,21 @@
 import json
-from pathlib import Path
 import tempfile
-from hypothesis import given
+from pathlib import Path
+
 import pytest
 import toml
 import yaml
+from hypothesis import given
 from pydantic import BaseModel
+
 from configloader.core import ConfigLoader
-from configloader.sources import ConfigSource
 from configloader.exceptions import (
-    ConfigValidationError,
-    ConfigSourceError,
     ConfigFileError,
     ConfigParserError,
-    ConfigMergeError
+    ConfigSourceError,
+    ConfigValidationError,
 )
+from configloader.sources import ConfigSource
 from tests.conftest import config_strategy, config_strategy_with_sections
 
 
@@ -153,13 +154,11 @@ def test_config_validation():
         with open(config_path, "w") as f:
             yaml.dump(invalid_config, f)
 
-        try:
+        with pytest.raises(ConfigValidationError) as e:
             ConfigLoader(
                 config_file_name=config_path,
                 config_model=TestConfig
             ).load_config()
-            assert False, "Should have raised ConfigValidationError"
-        except ConfigValidationError as e:
             assert isinstance(e, ConfigValidationError)
             assert "version" in str(e.errors)
 
@@ -196,12 +195,6 @@ def test_error_handling():
     """
     Test error handling for various failure scenarios.
     """
-    # Test file not found
-    # try:
-    #     ConfigLoader(config_file_name="nonexistent.yaml").load_config()
-    #     assert False, "Should have raised ConfigFileError"
-    # except ConfigFileError:
-    #     pass
 
     with pytest.raises(ConfigSourceError):
         ConfigLoader(config_file_name="nonexistent.yaml").load_config()
@@ -210,7 +203,7 @@ def test_error_handling():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_path = Path(tmpdir) / "config.xyz"
         config_path.touch()
-        with pytest.raises(ConfigFileError):
+        with pytest.raises(ConfigParserError):
             ConfigLoader(config_file_name=config_path).load_config()
 
     # Test failing source

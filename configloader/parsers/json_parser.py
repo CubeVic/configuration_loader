@@ -1,11 +1,12 @@
-from abc import ABC
 import json
 import logging
+
+from configloader.parsers.base import BaseParser
 
 logger = logging.getLogger(__name__)
 
 
-class JSONParser(ABC):
+class JSONParser(BaseParser):
 
     def load(self, config_file_path: str) -> dict:
         json_config = {}

@@ -1,6 +1,8 @@
 
 import logging
+
 import toml
+
 from configloader.parsers.base import BaseParser
 
 logger = logging.getLogger(__name__)
