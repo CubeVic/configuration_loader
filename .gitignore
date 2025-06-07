@@ -227,6 +227,7 @@ env/
 
 # Distribution
 dist/
+build/
 *.egg-info/
 build/
 eggs/
