@@ -144,6 +144,7 @@ except ConfigValidationError as e:
 ## Configuration File Examples
 
 ### TOML Configuration (Default)
+
 ```toml
 [app]
 name = "myapp"
@@ -156,6 +157,7 @@ port = 5432
 ```
 
 ### YAML Configuration
+
 ```yaml
 app:
   name: myapp
@@ -167,5 +169,12 @@ database:
   port: 5432
 ```
 
-### JSON Configuration
-```
+## CLI
+
+The CLI helps you:
+
+- Verify the configuration before running the app.
+- Debug configuration issues
+- Validate against your models
+- Convert between formats
+- Check environment variable overrides
