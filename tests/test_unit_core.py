@@ -10,7 +10,6 @@ from pydantic import BaseModel
 
 from configloader.core import ConfigLoader
 from configloader.exceptions import (
-    ConfigFileError,
     ConfigParserError,
     ConfigSourceError,
     ConfigValidationError,
