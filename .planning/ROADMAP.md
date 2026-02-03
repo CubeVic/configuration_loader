@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Fix parser silent failures (JSON, YAML, TOML raise ConfigParserError)
+- [x] 01-01: Fix parser silent failures (JSON, YAML, TOML raise ConfigParserError)
 - [ ] 01-02: Fix type signatures (Path instead of str, Dict[str, Any] return types)
 - [ ] 01-03: Fix path handling and tests (_get_file() bug, missing fixtures, type hints)
 
@@ -108,7 +108,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fix Critical Bugs | 0/3 | Not started | - |
+| 1. Fix Critical Bugs | 1/3 | In progress | - |
 | 2. Type System Compliance | 0/2 | Not started | - |
 | 3. Modernize Project Config | 0/2 | Not started | - |
 | 4. Feature Flags System | 0/2 | Not started | - |
