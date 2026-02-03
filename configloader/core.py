@@ -62,32 +62,46 @@ class ConfigLoader:
             ConfigFileError: If the configuration file cannot be found or accessed
         """
 
-        self.config_file_path: Optional[Path] = self._get_file(config_file_path, config_file_name)
+        self.config_file_path: Optional[Path] = self._get_file(
+            config_file_path, config_file_name, self._DEFAULT_CONFIG_FILE_NAME
+        )
         self.config_model = config_model
         self.sources = self._get_sources(env_prefix, cli_args, custom_sources)
         self._config: Optional[Dict[str, Any]] = None
 
+    _DEFAULT_CONFIG_FILE_NAME = "config.toml"
+
     @staticmethod
-    def _get_file(config_file_path: Optional[str], config_file_name: str) -> Optional[Path]:
+    def _get_file(
+        config_file_path: Optional[str],
+        config_file_name: str,
+        default_config_file_name: str
+    ) -> Optional[Path]:
         """Get the configuration file path.
 
         Returns None if no file path is configured (allows custom-source-only usage).
+        Only returns None when using default config filename and file doesn't exist.
 
         Args:
             config_file_path: Optional path to the configuration file
             config_file_name: Name of the configuration file
+            default_config_file_name: The default config file name for comparison
 
         Returns:
             Optional[Path]: Path to the configuration file, or None if no file configured
         """
         if config_file_path is None:
-            # Use default: repo root / config_file_name
-            default_path = Path(__file__).parent.parent / config_file_name
-            if default_path.exists():
-                logger.info(f"Using default config file: {default_path}")
-                return default_path
-            # No default file exists - return None (file source will be skipped)
-            return None
+            # Compute the path: repo root / config_file_name
+            computed_path = Path(__file__).parent.parent / config_file_name
+            if computed_path.exists():
+                logger.info(f"Using config file: {computed_path}")
+                return computed_path
+            # File doesn't exist - only skip if using default config filename
+            if config_file_name == default_config_file_name:
+                # Using default, file not found - gracefully skip file source
+                return None
+            # User explicitly specified a filename - return path so error is raised
+            return computed_path
 
         path = Path(config_file_path)
 
