@@ -1,5 +1,7 @@
 """Custom exceptions for the ConfigLoader package."""
 
+from typing import Any, Dict, List, Optional
+
 
 class ConfigLoaderError(Exception):
     """Base exception for all ConfigLoader errors."""
@@ -8,9 +10,9 @@ class ConfigLoaderError(Exception):
 
 class ConfigValidationError(ConfigLoaderError):
     """Raised when configuration validation fails."""
-    def __init__(self, message: str, errors: dict = None):
+    def __init__(self, message: str, errors: Optional[List[Dict[str, Any]]] = None):
         super().__init__(message)
-        self.errors = errors or {}
+        self.errors: List[Dict[str, Any]] = errors or []
 
 
 class ConfigSourceError(ConfigLoaderError):
