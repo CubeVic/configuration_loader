@@ -114,24 +114,31 @@ class ConfigLoader:
         Returns:
             List[ConfigSource]: List of configuration sources
         """
-        sources: List[ConfigSource] = [
-            FileConfigSource(self.config_file_path, self._get_parser()),
-            EnvConfigSource(env_prefix),
-            CLIConfigSource(cli_args)
-        ]
+        sources: List[ConfigSource] = []
+
+        # Only add file source if config file exists
+        if self.config_file_path is not None:
+            sources.append(FileConfigSource(self.config_file_path, self._get_parser()))
+
+        sources.append(EnvConfigSource(env_prefix))
+        sources.append(CLIConfigSource(cli_args))
+
         if custom_sources:
             sources.extend(custom_sources)
         return sources
 
-    def _get_parser(self) -> Any:
+    def _get_parser(self) -> Optional[Any]:
         """Get the appropriate parser for the configuration file.
 
         Returns:
-            Any: The appropriate parser for the file format
+            Optional[Any]: The appropriate parser for the file format, or None if no file path
 
         Raises:
             ConfigParserError: If the file format is not supported
         """
+        if self.config_file_path is None:
+            return None
+
         try:
             ext = self.config_file_path.suffix.lstrip(".").lower()
             parser_dispatcher = {
