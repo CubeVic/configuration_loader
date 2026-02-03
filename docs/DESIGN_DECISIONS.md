@@ -10,6 +10,7 @@
 - [Configuration Flow](#configuration-flow)
 - [Type System Philosophy](#type-system-philosophy)
 - [Error Handling Strategy](#error-handling-strategy)
+- [Phase 1 Walkthrough: Error Handling Journey](#phase-1-walkthrough-error-handling-journey)
 
 ---
 
@@ -472,5 +473,311 @@ raise ConfigValidationError(
 
 ---
 
-**Last Updated**: 2025-10-04
-**Version**: 0.1.0
+---
+
+## Phase 1 Walkthrough: Error Handling Journey
+
+> This section documents the error handling improvements made in Phase 1, explaining the "why" behind each change with visual diagrams.
+
+### The Silent Failure Problem
+
+Before Phase 1, ConfigLoader had a critical bug: **parsers silently returned empty dictionaries when config files had syntax errors**.
+
+```mermaid
+flowchart LR
+    subgraph before["Before Phase 1 ❌"]
+        direction TB
+        A["config.yaml<br/>(has syntax error)"] --> B["YAMLParser.load()"]
+        B --> C{"Parse error?"}
+        C -->|Yes| D["return {}"]
+        D --> E["ConfigLoader merges {}"]
+        E --> F["App runs with<br/>missing config! 💥"]
+    end
+```
+
+**Why is this dangerous?**
+
+Imagine your production config file:
+
+```yaml
+database:
+  host: prod-db.company.com
+  port: 5432
+  password: [SECRET  # ← Syntax error (unclosed bracket)
+```
+
+With the old behavior:
+1. Parser catches the YAML error
+2. Returns empty `{}`
+3. App starts with no database config
+4. App crashes later with "database not configured"
+5. You spend hours debugging before realizing the YAML was invalid
+
+### The Fix: Fail Fast with Context
+
+After Phase 1, parsers raise `ConfigParserError` with useful information:
+
+```mermaid
+flowchart LR
+    subgraph after["After Phase 1 ✅"]
+        direction TB
+        A["config.yaml<br/>(has syntax error)"] --> B["YAMLParser.load()"]
+        B --> C{"Parse error?"}
+        C -->|Yes| D["raise ConfigParserError<br/>'Failed to parse YAML<br/>file config.yaml:<br/>expected ] but got EOF'"]
+        D --> E["App fails immediately<br/>with clear message"]
+    end
+```
+
+**Key improvement:** The error message tells you:
+- Which file had the problem
+- What format it was (YAML/JSON/TOML)
+- What the parse error was (from the underlying library)
+
+### Exception Architecture: The Layered Approach
+
+ConfigLoader uses a **layered exception architecture** where lower-level errors are wrapped with additional context:
+
+```mermaid
+flowchart TB
+    subgraph layer1["Layer 1: Parsers"]
+        P1["JSONParser"] --> PE1["ConfigParserError"]
+        P2["YAMLParser"] --> PE2["ConfigParserError"]
+        P3["TOMLParser"] --> PE3["ConfigParserError"]
+    end
+
+    subgraph layer2["Layer 2: Sources"]
+        PE1 --> FS["FileConfigSource"]
+        PE2 --> FS
+        PE3 --> FS
+        FS -->|"wraps"| SE["ConfigSourceError"]
+    end
+
+    subgraph layer3["Layer 3: Core"]
+        SE --> CL["ConfigLoader.load_config()"]
+    end
+
+    subgraph user["User Code"]
+        CL --> U["User catches<br/>ConfigSourceError"]
+        U -->|"e.__cause__"| PE1
+    end
+```
+
+**Why wrap exceptions?**
+
+Each layer adds context:
+
+| Layer | Exception | Context Added |
+|-------|-----------|---------------|
+| Parser | `ConfigParserError` | "Failed to parse JSON file X: ..." |
+| Source | `ConfigSourceError` | "Error loading from FileConfigSource: ..." |
+| Core | (same, surfaced) | Which source failed |
+
+**User perspective:**
+
+```python
+try:
+    config = loader.load_config()
+except ConfigSourceError as e:
+    # What you see:
+    # "Error loading configuration from FileConfigSource:
+    #  Failed to parse YAML file config.yaml:
+    #  expected ',' or ']', but got '<stream end>'"
+
+    # If you need the original error:
+    original = e.__cause__  # ConfigParserError
+```
+
+### Type Signature Consistency
+
+Phase 1 also fixed inconsistent type signatures across parsers:
+
+```mermaid
+classDiagram
+    class BaseParser {
+        <<abstract>>
+        +load(file_path: Path) Dict[str, Any]
+    }
+
+    class JSONParser {
+        +load(file_path: Path) Dict[str, Any]
+    }
+
+    class YAMLParser {
+        +load(file_path: Path) Dict[str, Any]
+    }
+
+    class TOMLParser {
+        +load(file_path: Path) Dict[str, Any]
+    }
+
+    BaseParser <|-- JSONParser : implements
+    BaseParser <|-- YAMLParser : implements
+    BaseParser <|-- TOMLParser : implements
+
+    note for BaseParser "Before: str parameter, dict return\nAfter: Path parameter, Dict[str, Any] return"
+```
+
+**Before:**
+```python
+def load(self, config_file_path: str) -> dict:  # ❌ Inconsistent
+```
+
+**After:**
+```python
+def load(self, file_path: Path) -> Dict[str, Any]:  # ✅ Consistent
+```
+
+**Why does this matter?**
+
+1. **Type safety:** `Path` is more specific than `str`, catches bugs early
+2. **Consistency:** Matches the rest of the codebase
+3. **Explicitness:** `Dict[str, Any]` shows config structure
+
+### Path Handling: Files vs Directories
+
+The `_get_file()` method had a bug distinguishing file paths from directory paths:
+
+```mermaid
+flowchart TD
+    A["User calls ConfigLoader"] --> B{"What did user provide?"}
+
+    B -->|"config_file_path='/path/to/config.yaml'"| C["Path has .suffix?"]
+    B -->|"config_file_path='/path/to/configs/'"| D["Path has no .suffix"]
+    B -->|"config_file_path=None"| E["Use repo root + default filename"]
+
+    C -->|"Yes (.yaml)"| F["It's a file path<br/>Return as-is"]
+    D --> G["It's a directory<br/>Append config_file_name"]
+    E --> G
+
+    G --> H{"File exists?"}
+    H -->|"Yes"| I["Return full path"]
+    H -->|"No"| J{"Using default filename?"}
+
+    J -->|"Yes (config.toml)"| K["Return None<br/>Skip file source"]
+    J -->|"No (user specified)"| L["Return path anyway<br/>Will error on load"]
+```
+
+**Key insight:** The fix uses `.suffix` to detect file vs directory:
+
+```python
+if self.config_file_path.suffix:  # Has extension like .yaml, .toml
+    return self.config_file_path  # It's a file
+else:
+    # It's a directory, append filename
+    return self.config_file_path / self.config_file_name
+```
+
+### Optional File Source: Custom Sources Only
+
+Phase 1 enabled a new usage pattern: using ConfigLoader with **only custom sources**:
+
+```mermaid
+flowchart LR
+    subgraph traditional["Traditional Usage"]
+        F["config.yaml"] --> CL1["ConfigLoader"]
+        E1["ENV vars"] --> CL1
+        C1["CLI args"] --> CL1
+    end
+
+    subgraph new["New Pattern (Phase 1)"]
+        E2["ENV vars"] --> CL2["ConfigLoader<br/>config_file_path=None"]
+        CS["Custom Source<br/>(database, API, etc.)"] --> CL2
+    end
+```
+
+**Code example:**
+
+```python
+# Before Phase 1: Would fail with "config.toml not found"
+# After Phase 1: Works perfectly
+
+from configloader import ConfigLoader
+from configloader.sources import EnvConfigSource
+
+loader = ConfigLoader(
+    config_file_path=None,  # No file!
+    custom_sources=[EnvConfigSource(prefix="MYAPP_")]
+)
+
+# Loads only from env vars
+config = loader.load_config()  # {'database_host': 'localhost', ...}
+```
+
+**Use cases:**
+- 12-factor apps (env vars only)
+- Kubernetes (config from ConfigMaps/Secrets)
+- Testing (inject mock config)
+
+### Decision: Default vs Explicit Files
+
+Phase 1 introduced smart handling for missing config files:
+
+```mermaid
+flowchart TD
+    A["Config file not found"] --> B{"Using default filename?"}
+
+    B -->|"Yes: config.toml (default)"| C["Graceful degradation<br/>Skip file source<br/>Use other sources"]
+
+    B -->|"No: user specified myconfig.yaml"| D["Error raised<br/>FileNotFoundError<br/>User mistake!"]
+
+    C --> E["✅ App starts<br/>using env/CLI/custom"]
+    D --> F["❌ App fails<br/>clear error message"]
+```
+
+**Rationale:**
+
+| Scenario | Behavior | Why |
+|----------|----------|-----|
+| `ConfigLoader()` with no config.toml | Skip file source | User might only want env vars |
+| `ConfigLoader(config_file_name="app.yaml")` with no app.yaml | Error | User explicitly requested this file |
+
+**The distinction matters:**
+- If you didn't specify a filename, you might not need a file
+- If you explicitly named a file, you expect it to exist
+
+### Error Hierarchy Summary
+
+After Phase 1, the exception hierarchy is:
+
+```
+ConfigLoaderError (Base)
+├── ConfigSourceError      ← Wraps source failures
+│   └── ConfigFileError    ← File-specific errors
+├── ConfigParserError      ← Parse failures (JSON/YAML/TOML)
+├── ConfigValidationError  ← Pydantic validation errors
+└── ConfigMergeError       ← Merge conflicts
+```
+
+**When to catch what:**
+
+```python
+from configloader.exceptions import (
+    ConfigLoaderError,     # Catch-all
+    ConfigSourceError,     # Source failed to load
+    ConfigParserError,     # Invalid file syntax
+    ConfigValidationError, # Schema violation
+)
+
+try:
+    config = loader.load_config()
+except ConfigValidationError as e:
+    print(f"Invalid config: {e.errors}")
+except ConfigSourceError as e:
+    print(f"Source failed: {e}")
+except ConfigLoaderError as e:
+    print(f"General error: {e}")
+```
+
+### Key Takeaways from Phase 1
+
+1. **No silent failures:** Parse errors now raise, not return `{}`
+2. **Rich context:** Error messages include file path + details
+3. **Exception chaining:** `from e` preserves original stack trace
+4. **Consistent types:** All parsers use `Path` + `Dict[str, Any]`
+5. **Smart defaults:** Default filename → graceful skip; explicit → error
+6. **Optional files:** `config_file_path=None` enables env-only usage
+
+---
+
+**Last Updated**: 2026-02-03
+**Version**: 0.2.0 (Phase 1 complete)
