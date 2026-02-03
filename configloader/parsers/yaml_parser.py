@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from typing import Any, Dict
 
 import yaml
 
@@ -9,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class YAMLParser(BaseParser):
-    def load(self, config_file_path: str) -> dict:
+    def load(self, file_path: Path) -> Dict[str, Any]:
         try:
-            with open(config_file_path, "r") as file:
+            with open(file_path, "r") as file:
                 yaml_config = yaml.safe_load(file)
                 if isinstance(yaml_config, dict):
                     logger.info(f"Config file loaded successfully: {yaml_config}")
@@ -20,4 +22,4 @@ class YAMLParser(BaseParser):
                     logger.error("Config file is not a valid YAML file.")
                     raise ValueError("Config file is not a valid YAML file.")
         except yaml.YAMLError as e:
-            raise ConfigParserError(f"Failed to parse YAML file {config_file_path}: {e}") from e
+            raise ConfigParserError(f"Failed to parse YAML file {file_path}: {e}") from e

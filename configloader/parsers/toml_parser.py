@@ -1,4 +1,6 @@
 import logging
+from pathlib import Path
+from typing import Any, Dict
 
 import toml
 
@@ -9,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class TOMLParser(BaseParser):
-    def load(self, config_file_path: str) -> dict:
+    def load(self, file_path: Path) -> Dict[str, Any]:
         try:
-            toml_config = toml.load(config_file_path)
+            toml_config = toml.load(file_path)
             if isinstance(toml_config, dict):
                 logger.info(f"Config file loaded successfully: {toml_config}")
                 return toml_config
@@ -19,4 +21,4 @@ class TOMLParser(BaseParser):
                 logger.error("Config file is not a valid TOML file.")
                 raise ValueError("Config file is not a valid TOML file.")
         except toml.TomlDecodeError as e:
-            raise ConfigParserError(f"Failed to parse TOML file {config_file_path}: {e}") from e
+            raise ConfigParserError(f"Failed to parse TOML file {file_path}: {e}") from e
