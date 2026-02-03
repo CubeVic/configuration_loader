@@ -33,7 +33,7 @@ class ConfigLoader:
     according to a priority order. It also supports validation through Pydantic models.
 
     Attributes:
-        config_file_path (Path): Path to the configuration file
+        config_file_path (Optional[Path]): Path to the configuration file, or None if not using file source
         config_model (Optional[Type[BaseModel]]): Optional Pydantic model for validation
         sources (List[ConfigSource]): List of configuration sources
         _config (Optional[Dict[str, Any]]): Cached configuration
@@ -62,33 +62,41 @@ class ConfigLoader:
             ConfigFileError: If the configuration file cannot be found or accessed
         """
 
-        self.config_file_path = self._get_file(config_file_path, config_file_name)
+        self.config_file_path: Optional[Path] = self._get_file(config_file_path, config_file_name)
         self.config_model = config_model
         self.sources = self._get_sources(env_prefix, cli_args, custom_sources)
-        self._config = None
+        self._config: Optional[Dict[str, Any]] = None
 
     @staticmethod
-    def _get_file(config_file_path: Optional[str], config_file_name: str) -> Path:
+    def _get_file(config_file_path: Optional[str], config_file_name: str) -> Optional[Path]:
         """Get the configuration file path.
+
+        Returns None if no file path is configured (allows custom-source-only usage).
 
         Args:
             config_file_path: Optional path to the configuration file
             config_file_name: Name of the configuration file
 
         Returns:
-            Path: Path to the configuration file
-
-        Raises:
-            ConfigFileError: If the configuration file cannot be found or accessed
+            Optional[Path]: Path to the configuration file, or None if no file configured
         """
-        try:
-            if config_file_path is None:
-                config_file_path = Path(__file__).parent.parent / config_file_name
-                logger.info(f"Config file path not provided. Using default: {config_file_path}")
-                return config_file_path
-            return Path(config_file_path) / config_file_name
-        except Exception as e:
-            raise ConfigFileError(f"Failed to get configuration file path: {str(e)}") from e
+        if config_file_path is None:
+            # Use default: repo root / config_file_name
+            default_path = Path(__file__).parent.parent / config_file_name
+            if default_path.exists():
+                logger.info(f"Using default config file: {default_path}")
+                return default_path
+            # No default file exists - return None (file source will be skipped)
+            return None
+
+        path = Path(config_file_path)
+
+        # If path is a file (has extension), use it directly
+        if path.suffix:
+            return path
+
+        # If path is a directory, append config_file_name
+        return path / config_file_name
 
     def _get_sources(
         self,
